@@ -1,0 +1,75 @@
+<%- include("header") -%> 
+
+  <div class="container">
+      <div class="container-heading">
+        <h1>T O D O</h1>
+        <form class="theme-form" action="/theme" method="post">
+          <a class="theme-icon"><img src="<% if(theme === 'dark'){ %>images/icon-sun.svg<% }else{ %>images/icon-moon.svg<% } %>"></img></a>
+          <input type="hidden" name="theme" class="theme-value" value="<%= theme %>">
+          <input type="hidden" name="listName" value="<%= listTitle %>" >
+        </form>
+      </div>
+
+      <div class="add-todo">
+        <form action="/newone" method="POST">
+          <input type="text" name="newList" class="add-todo-input <% if(theme === "light"){ %>add-todo-input-t2<% } %>" placeholder="Create a custom to-do list..." autocomplete="off">
+          <div class="add-icon-bcg">
+            <button type="submit" name="submit" class="add-to-list" value="<%= listTitle %>" ><i class="fas fa-arrow-right"></i></button>
+          </div>
+        </form>
+      </div>
+
+      <div class="date-div">
+          <p><%= listTitle %></p>
+          <a href="/"class="fas fa-home"></a>
+      </div> 
+      <div class="todo-list <% if(theme === "light"){ %>todo-list-t2<% } %>">
+        <% todos.forEach(function(todo){ %> 
+            <div class="todo-list-item <% if(theme === "light"){ %>todo-list-item-t2<% } %> <% if(todo.status==="inactive"){ %>inactiveTodoItem<% } %>">
+              <form class="status-form" action="/status" method="post">
+                <label class="todo-list-label <% if(todo.status==="inactive"){ %>inactiveTodoLabel<% } %>">
+                  <input type="checkbox" class="checkbox" name="status" <% if(todo.status==="inactive"){ %>checked<% } %> >
+                  <span class="checkmark <% if(theme === "light"){ %>checkmark-t2<% } %> <% if(todo.status==="inactive"){ %>inactiveTodo<% } %>"></span>
+                  <span class="lebel-text"><%= todo.name %></span>
+                  <input type="hidden" name="todoId" value="<%= todo._id %>" >
+                  <input type="hidden" name="listName" value="<%= listTitle %>" >
+                </label>
+              </form>
+              <form class="list-form" action="/delete" method="post">
+                <img class="delete-todo-icon" height="15px" src="images/icon-cross.svg">
+                <input type="hidden" name="todoId" value="<%= todo._id %>" >
+                <input type="hidden" name="listName" value="<%= listTitle %>" >
+              </form>
+            </div> 
+        <% }) %>
+      </div>
+
+
+      <div class="todo-footer <% if(theme === "light"){ %>todo-footer-t2<% } %>">
+        <div><a class="total-active-todo" >0 items left</a></div>
+        <div class="middle-footer">
+          <a class="show-all">All</a>
+          <a class="show-active">Active</a>
+          <a class="show-completed">Completed</a>
+        </div>
+        <div>
+          <form class="clear-completed-form" action="/delete-completed" method="post">
+            <input type="hidden" name="listName" value="<%= listTitle %>" >
+            <a class="clear-completed">Clear Completed</a>
+          </form>
+        </div>
+      </div>
+
+
+      <div class="add-todo">
+        <form action="/" method="POST">
+          <input type="text" name="newTodo" class="add-todo-input <% if(theme === "light"){ %>add-todo-input-t2<% } %>" placeholder="Add a new to-do..." autocomplete="off">
+          <div class="add-icon-bcg">
+            <button type="submit" name="submit" class="add-to-list" value="<%= listTitle %>" >+</button>
+          </div>
+        </form>
+      </div>
+
+  </div>
+
+<%- include("footer") -%>

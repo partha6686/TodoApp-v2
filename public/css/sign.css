@@ -1,0 +1,79 @@
+html,body{
+    height: 100%;
+    width: 100%;
+}
+.container-sign{
+    width: 500px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    padding-top: 50px;
+    height: 80%;
+    display: flex;
+    align-items: center;
+    /* flex-direction: column; */
+}
+.container-sign a {
+    color: hsl(225, 100%, 67%);
+}
+.container-sign label{
+    display: block;
+    text-align: left;
+    font-size: 16px;
+    margin-top: 20px;
+}
+.form{
+    margin: 30px 0px 30px;
+}
+.form-div-sign{
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
+    text-align: center;
+    border-radius: 5px;
+    background-color: white;
+    color: hsl(235, 24%, 19%);
+    padding: 32px 35px;
+}
+.heading-sign{
+    font-size: 32px;
+}
+.email-input , .password-input{
+    width: 380px;
+    height: 40px;
+    padding: 8px 18px;
+    margin: 6px 0px;
+    border-radius: 5px;
+    /* border-style: none; */
+    border: 1px solid hsl(236, 0%, 55%) ;
+    /* border-color: ; */
+    font-size: 18px;
+}
+.submit-btn{
+    width: 420px;
+    height: 55px;
+    font-size: 18px;
+    margin: 32px 0 12px;
+    background-color: hsl(210, 100%, 67%);
+    color: white;
+    border-radius: 5px;
+    border-style: none;
+    cursor: pointer;
+}
+.submit-btn:hover{
+    background-image: linear-gradient(35deg,hsl(210, 100%, 67%), hsl(280, 87%, 65%));
+}
+
+@media (max-width: 510px) {
+    .container-sign{
+        width: 95%;
+    }
+    .email-input , .password-input{
+        width: 85%;
+        font-size: 16px;
+    }
+    .submit-btn{
+        width: 100%;
+        font-size: 16px;
+    }
+}

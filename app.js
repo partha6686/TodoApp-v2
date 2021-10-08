@@ -1,9 +1,13 @@
+require('dotenv').config();
 const express = require("express");
-const https = require("https");
 const mongoose = require("mongoose");
 const date = require(__dirname + "/date.js");
 const _ = require("lodash");
-const atlas = require(__dirname + "/atlas.js");
+const session = require('express-session');
+const passport = require("passport");
+const passportLocalMongoose = require('passport-local-mongoose');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const findOrCreate = require("mongoose-findorcreate");
 
 
 const app = express();
@@ -11,10 +15,17 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set('view engine','ejs');
+app.use(session({
+    secret: process.env.SECRET,
+    resave: false,
+    saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 
-
-mongoose.connect("mongodb+srv://admin-partha:"+ atlas.password +"@cluster0.gn61a.mongodb.net/todoDB");
+//mongoose.connect("mongodb+srv://admin-partha:"+ atlas.password +"@cluster0.gn61a.mongodb.net/todoDB");
+mongoose.connect("mongodb://localhost:27017/todoDB");
 
 const todoSchema = new mongoose.Schema ({
     name: {
@@ -28,100 +39,179 @@ const todoSchema = new mongoose.Schema ({
     }
 });
 
-const TodoList = mongoose.model("todo",todoSchema);
-
-const todoDoc = [
-    {
-        name: "Welcome to your to-do list"
-    },
-    {
-        name: "Hit + button to add new"
-    },
-    {
-        name: "Hit x button to delete"
-    }
-];
-
-
 const customTodoSchema = new mongoose.Schema ({
     name: String,
     items: [todoSchema]
 });
 
-const CustomList = mongoose.model("customList",customTodoSchema);
+const userSchema = new mongoose.Schema ({
+    username: String,
+    password: String,
+    googleId: String,
+    list: [todoSchema],
+    custom: [customTodoSchema]
+});
+
+userSchema.plugin(passportLocalMongoose);
+userSchema.plugin(findOrCreate);
+
+
+const User = mongoose.model("User",userSchema);
+
+passport.use(User.createStrategy());
+
+passport.serializeUser(function(user, done) {
+    done(null, user.id);
+});
+  
+passport.deserializeUser(function(id, done) {
+    User.findById(id, function(err, user) {
+      done(err, user);
+    });
+});
+
+
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/auth/google/todo"
+  },
+  function(accessToken, refreshToken, profile, cb) {
+    User.findOrCreate({ googleId: profile.id }, function (err, user) {
+      return cb(err, user);
+    });
+  }
+));
 
 let theme = "dark";
 
-app.get("/",function(req,res){ 
-    const day = date.getDate(); 
-    TodoList.find(function(err,todos){
+app.get("/auth/google",
+  passport.authenticate("google", { scope: ["profile"] })
+);
+
+app.get("/auth/google/todo", 
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  function(req, res) {
+    res.redirect("/");
+  }
+);
+
+
+app.get("/register",function(req,res){
+    res.render("register",{theme: theme});
+});
+app.post("/register",function(req,res){
+    User.register({username: req.body.username}, req.body.password, function(err,user){
         if(err){
             console.log(err);
-        } else{
-            if(todos.length === 0){
-                TodoList.insertMany(todoDoc, function(err){
-                    if(err){
-                        console.log(err);
-                    }
-                });
+            res.redirect("/register");
+        }else{
+            auth = passport.authenticate("local");
+            auth(req, res, function(){
                 res.redirect("/");
-            }
-            else{
+            });
+        }
+    });
+});
+
+app.get("/login",function(req,res){
+    res.render("login",{theme: theme});
+});
+app.post("/login",function(req,res){
+    const userDoc = new User({
+        username: req.body.username,
+        password: req.body.password
+    });
+    req.logIn(userDoc,function(err){
+        if(err){
+            console.log(err);
+        }else{
+            const auth = passport.authenticate("local");
+            auth(req, res, function(){
+                res.redirect("/");  
+            });
+        }
+    });
+});
+
+
+app.get("/",function(req,res){ 
+    if(req.isAuthenticated()){
+        const day = date.getDate();
+        User.findById(req.user.id,function(err,user){
+            if(err){
+                console.log(err);
+            }else{
+                const todos = user.list
                 res.render('todo',{
                     listTitle: day,
                     todos: todos,
                     theme: theme
                 });
             }
-        }
-    });
+        });
+    }else{
+        res.redirect("/login");
+    }
 });
 
 app.get("/:todoName",function(req,res){
     const customTodoName = _.capitalize(req.params.todoName);
-
-    CustomList.findOne({name: customTodoName},function(err,results){
-        if(err){
-            console.log(err);
-        } else {
-            if(!results){
-                const custom = new CustomList ({
-                    name: customTodoName,
-                    items: todoDoc
-                });
-                custom.save();
-                res.redirect("/" + customTodoName);
-            } else {
-                res.render('todo',{
-                    listTitle: results.name,
-                    todos: results.items,
-                    theme: theme
-                });
-            }
-        }
-    });
-});
-
-app.post("/",function(req,res){
-    const newTodo = req.body.newTodo;
-    const listName = req.body.submit;
-    
-    const newTodoDoc = new TodoList({
-        name: newTodo
-    });
-
-    if(listName === date.getDate()) {
-        newTodoDoc.save();
-        res.redirect("/");
-    } else {
-        CustomList.findOne({name: listName},function(err,results){
+    if(req.isAuthenticated()){
+        User.findById(req.user.id,function(err,user){
             if(err){
                 console.log(err);
             }else{
-                results.items.push(newTodoDoc);
-                results.save();
-                res.redirect("/" + listName);
-            }     
+                user.custom.forEach(function(custom){
+                    if(custom.name === customTodoName){
+                        const todos = custom.items;
+                        res.render('todo',{
+                            listTitle: customTodoName,
+                            todos: todos,
+                            theme: theme
+                        });
+                    }
+                });  
+            }
+        });
+    }else{
+        res.redirect("/login");
+    }
+    
+});
+
+app.post("/",function(req,res){
+    const listName = req.body.submit;
+    
+    const newTodoDoc = {
+        name: req.body.newTodo
+    };
+
+    if(listName === date.getDate()) {
+        User.findById(req.user.id, function(err, user){
+            if(err){
+                console.log(err);
+            }else{
+                user.list.push(newTodoDoc);
+                user.save(function(){
+                    res.redirect("/");
+                });  
+            }
+        });
+    } else {
+        User.findById(req.user.id, function(err,user){
+            if(err){
+                console.log(err);
+            }else{
+                user.custom.forEach(function(custom){
+                    if(custom.name === listName){
+                        custom.items.push(newTodoDoc);
+                        user.save(function(){
+                            res.redirect("/" + listName);
+                        }); 
+                    }
+                });
+            }
         });
     }  
 });
@@ -131,34 +221,57 @@ app.post("/delete",function(req,res){
     const todoId = req.body.todoId;
 
     if(listName === date.getDate()){
-        TodoList.deleteOne({_id: todoId},function(err){
+        User.findByIdAndUpdate(req.user.id, {$pull: {list: {_id: todoId}}}, function(err, user){
             if(err){
                 console.log(err);
+            }else{
+                res.redirect("/");
             }
         });
-        res.redirect("/");
     } else {
-        // CustomList.findOne({name: listName},function(err,results){
-        //     if(err){
-        //         console.log(err);
-        //     } else {
-        //         results.items = results.items.filter(item => item._id.valueOf() !== todoId);
-        //         results.save();
-        //         res.redirect("/" + listName);
-        //     }
-        // });
-        CustomList.findOneAndUpdate({name: listName}, {$pull: {items: {_id: todoId}}}, function(err,result){
+        User.findById(req.user.id, function(err,user){
             if(err){
                 console.log(err);
-            } else {
-                res.redirect("/" + listName);
+            }else{
+                user.custom.forEach(function(custom){
+                    if(custom.name === listName){
+                        custom.items = custom.items.filter(item => item._id.valueOf() !== todoId);
+                        user.save(function(){
+                            res.redirect("/" + listName);
+                        });
+                    }
+                });
             }
         });
     } 
 });
 app.post("/newone",function(req,res){
-    const listName = req.body.newList;
-    res.redirect("/" + listName);
+    const listName = _.capitalize(req.body.newList);
+
+    const customDoc = {
+        name: listName,
+        items: []
+    };
+
+    User.findById(req.user.id, function(err,user){
+        if(err){
+            console.log(err);
+        }else{
+            let present = false;
+            user.custom.forEach(function(custom){
+                if(custom.name === listName){
+                    present = true;
+                    res.redirect("/" + listName);
+                }
+            });
+            if(!present){
+                user.custom.push(customDoc);
+                user.save(function(){
+                    res.redirect("/" + listName);
+                });
+            }
+        }
+    });
 });
 app.post("/status",function(req,res){
     const listName = req.body.listName;
@@ -166,50 +279,52 @@ app.post("/status",function(req,res){
     const checkValue = req.body.status;
     if(listName === date.getDate()){
         if(typeof checkValue !== "undefined"){
-            TodoList.findOneAndUpdate({_id: todoId},{status: "inactive"},function(err, result){
+            User.updateOne({_id: req.user.id, "list._id": todoId}, {$set: {"list.$.status": "inactive"}},function(err,result){
                 if(err){
                     console.log(err);
+                }else{
+                    res.redirect("/");
                 }
             });
         }else{
-            TodoList.findOneAndUpdate({_id: todoId},{status: "active"},function(err, result){
+            User.updateOne({_id: req.user.id, "list._id": todoId}, {$set: {"list.$.status": "active"}},function(err,result){
                 if(err){
                     console.log(err);
+                }else{
+                    res.redirect("/");
                 }
             });
         }
-        res.redirect("/");
     }else{
-        if(typeof checkValue !== "undefined"){
-            CustomList.updateOne({
-                name: listName,
-                "items._id": todoId
-            },{
-                $set: {"items.$.status": "inactive"}
-            },function(err,result){
-                if(err){
-                    console.log(err);
-                }
-            });
-        }else{
-            CustomList.updateOne({
-                name: listName,
-                "items._id": todoId
-            },{
-                $set: {"items.$.status": "active"}
-            },function(err,result){
-                if(err){
-                    console.log(err);
-                }
-            });
-        }
-        res.redirect("/" + listName);
+        User.findById(req.user.id, function(err, user){
+            if(err){
+                console.log(err);
+            }else{
+                user.custom.forEach(function(custom){
+                    if(custom.name === listName){
+                        custom.items.forEach(function(item){
+                            if(item._id.valueOf() === todoId){
+                                if(typeof checkValue !== "undefined"){
+                                    item.status = "inactive";
+                                }else{
+                                    item.status = "active";
+                                }
+                                user.save(function(){
+                                    res.redirect("/" + listName);
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
     }
+        
 });
 app.post("/delete-completed",function(req,res){
     const listName = req.body.listName;
     if(listName === date.getDate()){
-        TodoList.deleteMany({status: "inactive"},function(err){
+        User.findByIdAndUpdate(req.user.id,{$pull: {list: {status: "inactive"}}},function(err,user){
             if(err){
                 console.log(err);
             }else{
@@ -217,11 +332,18 @@ app.post("/delete-completed",function(req,res){
             }
         });
     }else{
-        CustomList.updateMany({name: listName}, {$pull: {items: {status: "inactive"}}}, function(err,result){
+        User.findById(req.user.id, function(err,user){
             if(err){
                 console.log(err);
-            } else {
-                res.redirect("/" + listName);
+            }else{
+                user.custom.forEach(function(custom){
+                    if(custom.name === listName){
+                        custom.items = custom.items.filter(item => item.status === "active");
+                        user.save(function(){
+                            res.redirect("/" + listName);
+                        });
+                    }
+                });
             }
         });
     }

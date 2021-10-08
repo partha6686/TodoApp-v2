@@ -1,0 +1,27 @@
+<%- include("header") -%> 
+
+<div class="container-sign">
+    <div class="form-div-sign">
+        <p class="heading-sign">Create Your Account</p>
+        <form action="/register" method="post" class="form">
+            <div>
+                <label>Email</label>
+                <input type="email" name="username" class="email-input" placeholder="Email address" autocomplete="off">
+                <label>Password</label>
+                <input type="password" name="password" class="password-input" placeholder="Password" autocomplete="off">
+                <label>Confirm Password</label>
+                <input type="password" name="confirmPasseord" class="password-input" placeholder="Confirm Password" autocomplete="off">
+            </div>
+            <button type="submit" class="submit-btn">Sign up</button>
+            <p>Already have an account? <a href="/login"> Log in</a></p>
+        </form>
+        <div>
+            <a href="/auth/google" role="button">
+              <i class="fab fa-google"> </i>
+               Sign Up with Google
+            </a>
+        </div>
+    </div>
+</div>
+
+<%- include("footer") -%>

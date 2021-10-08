@@ -11,10 +11,10 @@
       </div>
 
       <div class="add-todo">
-        <form action="/newone" method="POST">
-          <input type="text" name="newList" class="add-todo-input <% if(theme === "light"){ %>add-todo-input-t2<% } %>" placeholder="Create a custom to-do list..." autocomplete="off">
+        <form action="/" method="POST">
+          <input type="text" name="newTodo" class="add-todo-input <% if(theme === "light"){ %>add-todo-input-t2<% } %>" placeholder="Add a new to-do..." autocomplete="off">
           <div class="add-icon-bcg">
-            <button type="submit" name="submit" class="add-to-list" value="<%= listTitle %>" ><i class="fas fa-arrow-right"></i></button>
+            <button type="submit" name="submit" class="add-to-list" value="<%= listTitle %>" >+</button>
           </div>
         </form>
       </div>
@@ -60,15 +60,16 @@
         </div>
       </div>
 
-
       <div class="add-todo">
-        <form action="/" method="POST">
-          <input type="text" name="newTodo" class="add-todo-input <% if(theme === "light"){ %>add-todo-input-t2<% } %>" placeholder="Add a new to-do..." autocomplete="off">
+        <form action="/newone" method="POST">
+          <input type="text" name="newList" class="add-todo-input <% if(theme === "light"){ %>add-todo-input-t2<% } %>" placeholder="Create a custom to-do list..." autocomplete="off">
           <div class="add-icon-bcg">
-            <button type="submit" name="submit" class="add-to-list" value="<%= listTitle %>" >+</button>
+            <button type="submit" name="submit" class="add-to-list" value="<%= listTitle %>" ><i class="fas fa-arrow-right"></i></button>
           </div>
         </form>
       </div>
+
+      
 
   </div>
 

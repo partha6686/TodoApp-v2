@@ -21,7 +21,12 @@
 
       <div class="date-div">
           <p><%= listTitle %></p>
-          <a href="/"class="fas fa-home"></a>
+          <% if(listTitle === date){ %>
+                <a href="/logout">Logout <i class="fas fa-sign-out-alt"></i></a>
+          <% }else{ %>
+                <a href="/"><i class="fas fa-home"></i></a>
+          <% } %>
+          
       </div> 
       <div class="todo-list <% if(theme === "light"){ %>todo-list-t2<% } %>">
         <% todos.forEach(function(todo){ %> 

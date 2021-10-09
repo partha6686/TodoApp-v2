@@ -2,13 +2,17 @@
 
 <div class="container-sign">
     <div class="form-div-sign">
-        <p class="heading-sign">Log in</p>
+        <p class="heading-sign">Login</p>
+        <% if(errorMsg){ %>
+            <p class="required"><i class="fas fa-exclamation-circle"></i> <%= errorMsg %>.</p>
+        <% } %>
+        
         <form action="/login" method="post" class="form">
             <div>
-                <label>Email</label>
-                <input type="email" name="username" class="email-input" placeholder="Email address" autocomplete="off">
-                <label>Password</label>
-                <input type="password" name="password" class="password-input" placeholder="Password" autocomplete="off">
+                <label>Email <span class="required"> *</span></label>
+                <input type="email" name="username" class="email-input" placeholder="Email address" required>
+                <label>Password <span class="required"> *</span></label>
+                <input type="password" name="password" class="password-input" placeholder="Password" required>
             </div>
             <button type="submit" class="submit-btn">Log in</button>
             <p>Don't have an account? <a href="/register">Sign up</a></p>

@@ -3,14 +3,18 @@
 <div class="container-sign">
     <div class="form-div-sign">
         <p class="heading-sign">Create Your Account</p>
+        <% if(errorMsg){ %>
+            <p class="required"><i class="fas fa-exclamation-circle"></i> <%= errorMsg %>.</p>
+        <% } %>
         <form action="/register" method="post" class="form">
             <div>
-                <label>Email</label>
-                <input type="email" name="username" class="email-input" placeholder="Email address" autocomplete="off">
-                <label>Password</label>
-                <input type="password" name="password" class="password-input" placeholder="Password" autocomplete="off">
-                <label>Confirm Password</label>
-                <input type="password" name="confirmPasseord" class="password-input" placeholder="Confirm Password" autocomplete="off">
+                <label>Email <span class="required"> *</span></label>
+                <input type="email" name="username" class="email-input" placeholder="Email address" autocomplete="off" required>
+                <label>Password <span class="required"> *</span></label>
+                <input type="password" id="password" name="password" class="password-input" placeholder="Password" required>
+                <label>Confirm Password <span class="required"> *</span></label>
+                <input type="password" id="confirm-password" name="confirmPasseord" class="password-input" placeholder="Confirm Password" required>
+                <p class="required pass-valdate"><i class="fas fa-exclamation-circle"></i> Password and Confirm password don't match!</p>
             </div>
             <button type="submit" class="submit-btn">Sign up</button>
             <p>Already have an account? <a href="/login"> Log in</a></p>

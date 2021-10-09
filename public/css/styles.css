@@ -48,11 +48,15 @@ p{
 
 .date-div a{
     position: relative;
-    font-size: 22px;
-    top: 5px;
+    top: 6px;
     left: 35px;
     color: white;
+    letter-spacing: 1px;
 }
+.date-div a i{
+    font-size: 22px;
+}
+
 
 /* ! customize the input box  */
 .add-todo-input {

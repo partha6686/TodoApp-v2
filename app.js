@@ -8,6 +8,8 @@ const passport = require("passport");
 const passportLocalMongoose = require('passport-local-mongoose');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const findOrCreate = require("mongoose-findorcreate");
+const flash = require('connect-flash');
+let theme = "dark";
 
 
 const app = express();
@@ -22,6 +24,8 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(flash());
+
 
 
 //mongoose.connect("mongodb+srv://admin-partha:"+ atlas.password +"@cluster0.gn61a.mongodb.net/todoDB");
@@ -83,7 +87,6 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-let theme = "dark";
 
 app.get("/auth/google",
   passport.authenticate("google", { scope: ["profile"] })
@@ -98,12 +101,13 @@ app.get("/auth/google/todo",
 
 
 app.get("/register",function(req,res){
-    res.render("register",{theme: theme});
+    res.render("register",{theme: theme, errorMsg: req.flash().UserExistsError});
 });
 app.post("/register",function(req,res){
     User.register({username: req.body.username}, req.body.password, function(err,user){
         if(err){
             console.log(err);
+            req.flash('UserExistsError','A user with the given email is already registered');
             res.redirect("/register");
         }else{
             auth = passport.authenticate("local");
@@ -115,7 +119,7 @@ app.post("/register",function(req,res){
 });
 
 app.get("/login",function(req,res){
-    res.render("login",{theme: theme});
+    res.render("login",{theme: theme, errorMsg: req.flash().error});
 });
 app.post("/login",function(req,res){
     const userDoc = new User({
@@ -126,7 +130,7 @@ app.post("/login",function(req,res){
         if(err){
             console.log(err);
         }else{
-            const auth = passport.authenticate("local");
+            const auth = passport.authenticate("local", { successRedirect: '/', failureRedirect: '/login', failureFlash: true});
             auth(req, res, function(){
                 res.redirect("/");  
             });
@@ -134,6 +138,10 @@ app.post("/login",function(req,res){
     });
 });
 
+app.get("/logout", function(req, res){
+    req.logOut();
+    res.redirect('/');
+});
 
 app.get("/",function(req,res){ 
     if(req.isAuthenticated()){
@@ -146,7 +154,8 @@ app.get("/",function(req,res){
                 res.render('todo',{
                     listTitle: day,
                     todos: todos,
-                    theme: theme
+                    theme: theme,
+                    date: date.getDate()
                 });
             }
         });
@@ -168,7 +177,8 @@ app.get("/:todoName",function(req,res){
                         res.render('todo',{
                             listTitle: customTodoName,
                             todos: todos,
-                            theme: theme
+                            theme: theme,
+                            date: date.getDate()
                         });
                     }
                 });  
@@ -176,8 +186,7 @@ app.get("/:todoName",function(req,res){
         });
     }else{
         res.redirect("/login");
-    }
-    
+    }  
 });
 
 app.post("/",function(req,res){
@@ -358,6 +367,7 @@ app.post("/theme",function(req,res){
     }
     listName === date.getDate() ? res.redirect("/"): res.redirect("/" + listName);
 });
+
 
 
 
